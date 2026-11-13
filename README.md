@@ -6,7 +6,9 @@
 
 安装支持用户脚本的浏览器扩展后，打开下面的链接并确认安装：
 
-[安装或更新小游戏助手](https://raw.githubusercontent.com/slnamurv/jinhuan-minigames/main/jinhuan.gomoku.auto.user.js)
+[安装或更新小游戏助手](https://scriptcat.org/scripts/code/9066/%E5%B0%BD%E6%AC%A2%E5%B0%8F%E6%B8%B8%E6%88%8F%E5%8A%A9%E6%89%8B.user.js)
+
+[脚本猫主页与反馈](https://scriptcat.org/zh-CN/script-show-page/9066)
 
 脚本文件为 [`jinhuan.gomoku.auto.user.js`](jinhuan.gomoku.auto.user.js)，安装时只需要这一个文件，无需本地引擎或其他服务。
 
@@ -26,3 +28,5 @@
 “对局记录”展示最近运行的奖励汇总和最近 50 局明细。明细默认折叠，点击标题展开；记录保存在当前浏览器，按账号区分。
 
 首页标题旁可查看已加载脚本的版本。更新脚本后，正常刷新鱼鱼谷页面以加载新版。
+
+安装与自动更新由脚本猫分发；维护时在 GitHub 提交新版本，再通过 Webhook 同步到脚本猫。

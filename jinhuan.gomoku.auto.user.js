@@ -1,8 +1,12 @@
 // ==UserScript==
 // @name         尽欢小游戏助手
 // @namespace    https://52dmeme.com/
-// @version      0.5.7
+// @version      0.5.8
 // @description  五子棋与可选抽牌、猜拳、盲盒自动执行，记录最近 50 局奖励及本次运行汇总
+// @homepageURL  https://scriptcat.org/zh-CN/script-show-page/9066
+// @supportURL   https://scriptcat.org/zh-CN/script-show-page/9066/issue
+// @downloadURL  https://scriptcat.org/scripts/code/9066/%E5%B0%BD%E6%AC%A2%E5%B0%8F%E6%B8%B8%E6%88%8F%E5%8A%A9%E6%89%8B.user.js
+// @updateURL    https://scriptcat.org/scripts/code/9066/%E5%B0%BD%E6%AC%A2%E5%B0%8F%E6%B8%B8%E6%88%8F%E5%8A%A9%E6%89%8B.meta.js
 // @match        https://52dmeme.com/*
 // @grant        none
 // @noframes
@@ -3473,4 +3477,4 @@ return Object.freeze({ NPC, GOMOKU_PAID, GOMOKU_N, ITEM_NAME, refresh, gomokuAI,
         getWarnings() { return warning ? [warning.message] : []; }
     };
     return api;
-},"0.5.7");
+},"0.5.8");
