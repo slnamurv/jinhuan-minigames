@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         尽欢小游戏助手
 // @namespace    https://52dmeme.com/
-// @version      0.5.8
-// @description  五子棋与可选抽牌、猜拳、盲盒自动执行，记录最近 50 局奖励及本次运行汇总
+// @version      0.5.9
+// @description  五子棋与可选抽牌、猜拳、盲盒自动执行，记录并汇总最近 50 局奖励
 // @homepageURL  https://scriptcat.org/zh-CN/script-show-page/9066
 // @supportURL   https://scriptcat.org/zh-CN/script-show-page/9066/issue
 // @downloadURL  https://scriptcat.org/scripts/code/9066/%E5%B0%BD%E6%AC%A2%E5%B0%8F%E6%B8%B8%E6%88%8F%E5%8A%A9%E6%89%8B.user.js
@@ -196,8 +196,8 @@
             </fieldset>
         </div>
         <div data-records-page id="jinhuan-gomoku-records-page" hidden>
-            <section data-run-summary aria-label="最近运行奖励汇总" hidden>
-                <div data-summary-heading><strong>最近运行</strong><time data-summary-time></time></div>
+            <section data-run-summary aria-label="最近 50 局奖励汇总" hidden>
+                <div data-summary-heading><strong>最近 50 局汇总</strong><time data-summary-time></time></div>
                 <p data-summary-rewards></p><p data-summary-games></p><p data-summary-note></p>
             </section>
             <details data-records-details>
@@ -348,10 +348,9 @@
             target.append(note);
         }
     }
-    function renderRunSummary() {
+    function renderLastRunSummary() {
         const summary = records?.getLastSummary();
         const visible = !!summary && !currentRunId;
-        ui('[data-run-summary]').hidden = !visible || currentPanelPage !== 'records';
         const compact = ui('[data-last-run]');
         compact.hidden = !visible || !summary.games;
         if (!compact.hidden) {
@@ -360,23 +359,26 @@
             ui('[data-last-run-rewards]').textContent = rewards;
             compact.setAttribute('aria-label', `查看运行奖励汇总：${summary.games} 局，${rewards}`);
         }
-        if (visible) {
-            ui('[data-summary-games]').textContent = `共 ${summary.games} 局 · ${summary.wins} 胜 / ${summary.losses} 负 / ${summary.draws} 和`;
-            renderReward(ui('[data-summary-rewards]'), summary.coins, summary.items, summary.unknownCoins);
-            ui('[data-summary-note]').textContent = summary.reason || '运行已结束';
-            ui('[data-summary-time]').textContent = timeLabel(summary.endedAt);
-            const endedAt = new Date(summary.endedAt);
-            if (Number.isFinite(summary.endedAt) && Number.isFinite(endedAt.getTime())) ui('[data-summary-time]').dateTime = endedAt.toISOString();
-            else ui('[data-summary-time]').removeAttribute('datetime');
-        }
     }
     function renderRecords() {
         renderPanelChrome();
-        renderRunSummary();
+        renderLastRunSummary();
+        ui('[data-run-summary]').hidden = true;
         ui('[data-records-warning]').hidden = !recordsWarning;
         ui('[data-records-warning]').textContent = recordsWarning;
         if (currentPanelPage !== 'records') return;
         const entries = records?.getRecords() || [];
+        const summary = records?.getRecentSummary();
+        ui('[data-run-summary]').hidden = !summary;
+        if (summary) {
+            ui('[data-summary-games]').textContent = `共 ${summary.games} 局 · ${summary.wins} 胜 / ${summary.losses} 负 / ${summary.draws} 和`;
+            renderReward(ui('[data-summary-rewards]'), summary.coins, summary.items, summary.unknownCoins);
+            ui('[data-summary-note]').textContent = '跨运行累计 · 最多保留 50 局';
+            ui('[data-summary-time]').textContent = `截至 ${timeLabel(summary.lastAt)}`;
+            const lastAt = new Date(summary.lastAt);
+            if (Number.isFinite(summary.lastAt) && Number.isFinite(lastAt.getTime())) ui('[data-summary-time]').dateTime = lastAt.toISOString();
+            else ui('[data-summary-time]').removeAttribute('datetime');
+        }
         ui('[data-records-details]').hidden = entries.length === 0;
         if (!entries.length) ui('[data-records-details]').open = false;
         ui('[data-records-count]').hidden = entries.length === 0;
@@ -3309,6 +3311,29 @@ return Object.freeze({ NPC, GOMOKU_PAID, GOMOKU_N, ITEM_NAME, refresh, gomokuAI,
         return copy(modelFor(account).records).reverse();
     }
 
+    function getRecentSummary() {
+        const records = getRecords();
+        if (!records.length) return null;
+        const summary = { games: 0, wins: 0, losses: 0, draws: 0, coins: 0, unknownCoins: 0,
+            items: [], firstAt: records[0].at, lastAt: records[0].at };
+        const names = new Map();
+        for (const entry of records) {
+            addReward(summary, entry);
+            summary.firstAt = Math.min(summary.firstAt, entry.at);
+            summary.lastAt = Math.max(summary.lastAt, entry.at);
+            // 同品质物品采用最近明细中可用的名称，不影响原有运行累计。
+            for (const item of entry.items) {
+                const key = JSON.stringify([item.id, item.q]);
+                if (!names.has(key) && typeof item.name === 'string') names.set(key, item.name);
+            }
+        }
+        for (const item of summary.items) {
+            const key = JSON.stringify([item.id, item.q]);
+            if (names.has(key)) item.name = names.get(key);
+        }
+        return summary;
+    }
+
     function itemsFrom(out, practice) {
         if (practice || !Array.isArray(out.got)) return [];
         return out.got.filter(item => object(item) && typeof item.id === 'string' && item.id
@@ -3472,9 +3497,9 @@ return Object.freeze({ NPC, GOMOKU_PAID, GOMOKU_N, ITEM_NAME, refresh, gomokuAI,
         installed = false;
     }
 
-    const api = { install, dispose, beginRun, finishRun, getSummary, getLastSummary, getRecords, recordSettlement, reload,
+    const api = { install, dispose, beginRun, finishRun, getSummary, getLastSummary, getRecords, getRecentSummary, recordSettlement, reload,
         subscribe(listener) { if (typeof listener !== 'function') return () => {}; listeners.add(listener); return () => listeners.delete(listener); },
         getWarnings() { return warning ? [warning.message] : []; }
     };
     return api;
-},"0.5.8");
+},"0.5.9");
